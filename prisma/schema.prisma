@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  boards      Board[]
+  cardMembers CardMember[]
+  comments    Comment[]
+  activities  Activity[]
+  attachments Attachment[]
+}
+
+model Board {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner      User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lists      List[]
+  labels     Label[]
+  activities Activity[]
+}
+
+model List {
+  id        String   @id @default(uuid())
+  boardId   String
+  title     String
+  position  Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards Card[]
+}
+
+model Card {
+  id           String    @id @default(uuid())
+  listId       String
+  title        String
+  description  String?
+  position     Float
+  isArchived   Boolean   @default(false)
+  dueDate      DateTime?
+  reminderDate DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  list        List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  cardLabels  CardLabel[]
+  cardMembers CardMember[]
+  checklists  Checklist[]
+  comments    Comment[]
+  activities  Activity[]
+  attachments Attachment[]
+}
+
+model Label {
+  id        String   @id @default(uuid())
+  boardId   String
+  title     String?
+  color     String
+  createdAt DateTime @default(now())
+
+  board      Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cardLabels CardLabel[]
+}
+
+model CardLabel {
+  cardId  String
+  labelId String
+
+  card  Card  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, labelId])
+}
+
+model CardMember {
+  cardId String
+  userId String
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, userId])
+}
+
+model Checklist {
+  id        String   @id @default(uuid())
+  cardId    String
+  title     String
+  position  Float
+  createdAt DateTime @default(now())
+
+  card  Card            @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  items ChecklistItem[]
+}
+
+model ChecklistItem {
+  id          String   @id @default(uuid())
+  checklistId String
+  content     String
+  isCompleted Boolean  @default(false)
+  position    Float
+  createdAt   DateTime @default(now())
+
+  checklist Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  cardId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id            String   @id @default(uuid())
+  boardId       String
+  userId        String
+  cardId        String?
+  actionType    String
+  actionDetails Json? // Using JSON for arbitrary action metadata
+  createdAt     DateTime @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card  Card? @relation(fields: [cardId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  cardId    String
+  userId    String
+  fileUrl   String
+  fileName  String
+  fileType  String?
+  fileSize  Int? // Size in bytes
+  createdAt DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

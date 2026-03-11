@@ -1,0 +1,9 @@
+node_modules/
+.env
+
+# Other common Node.js ignores
+npm-debug.log
+yarn-error.log
+coverage/
+.DS_Store
+uploads/
