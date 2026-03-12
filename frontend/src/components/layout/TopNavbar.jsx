@@ -3,12 +3,11 @@ import { Trello, Share2, Filter, Search, User, MoreHorizontal, X, ChevronLeft, C
 import useBoardStore from '../../store/useBoardStore';
 
 const gradientOptions = [
-  'bg-gradient-to-br from-blue-600 to-indigo-900',
-  'bg-gradient-to-br from-green-400 to-emerald-700',
-  'bg-gradient-to-br from-orange-400 to-rose-600',
-  'bg-gradient-to-br from-purple-500 to-pink-600',
-  'bg-gradient-to-r from-cyan-400 to-blue-500',
-  'bg-gradient-to-br from-gray-700 to-gray-900',
+  'bg-gradient-to-br from-blue-900 via-blue-700 to-blue-400',
+  'bg-gradient-to-br from-purple-900 via-purple-700 to-pink-400',
+  'bg-gradient-to-br from-emerald-900 via-emerald-700 to-teal-400',
+  'bg-gradient-to-br from-orange-900 via-orange-700 to-amber-400',
+  'bg-gradient-to-br from-slate-900 via-slate-700 to-slate-400',
 ];
 
 const imageOptions = [
@@ -37,7 +36,7 @@ const TopNavbar = () => {
   };
 
   return (
-    <nav className="relative z-50 flex items-center justify-between px-4 py-3 bg-black/20 dark:bg-[#22272b] backdrop-blur-sm text-white dark:text-[#b6c2cf] transition-colors border-b border-transparent dark:border-[#384148]">
+    <nav className="relative z-50 flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-sm border-b border-white/20 text-white">
       {/* Left side - Branding */}
       <div className="flex items-center gap-2">
         <Trello size={22} className="text-blue-400" />
@@ -53,10 +52,10 @@ const TopNavbar = () => {
           {/* TOGGLE BUTTON */}
           <button 
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`flex items-center gap-2 rounded-[3px] px-3 py-1.5 text-sm font-medium backdrop-blur-sm transition-colors outline-none focus:outline-none focus:ring-0 ${
-              filterQuery 
-                ? 'bg-white/30 text-white dark:bg-[#a6c5e23d] dark:text-[#b6c2cf]' 
-                : 'bg-white/20 hover:bg-white/30 text-white dark:bg-[#a6c5e229] dark:hover:bg-[#a6c5e23d] dark:text-[#b6c2cf]'
+            className={`flex items-center gap-2 rounded-[3px] px-3 py-1.5 text-sm font-medium transition-colors text-white outline-none focus:outline-none focus:ring-0 ${
+              (isFilterOpen || filterQuery) 
+                ? 'bg-white/20' 
+                : 'bg-transparent hover:bg-white/20'
             }`}
           >
             <Filter size={16} />
@@ -206,7 +205,7 @@ const TopNavbar = () => {
                         <button
                           key={idx}
                           onClick={() => { setBoardBackground(grad); setIsMenuOpen(false); }}
-                          className={`h-16 rounded-[3px] hover:opacity-80 transition-opacity ${grad}`}
+                          className={`w-16 h-12 rounded-sm cursor-pointer hover:opacity-80 transition-opacity ${grad}`}
                         />
                       ))}
                     </div>
