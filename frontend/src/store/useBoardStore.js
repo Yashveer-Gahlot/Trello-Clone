@@ -1,48 +1,114 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
+const API = 'http://localhost:3000/api';
+
 const useBoardStore = create((set, get) => ({
+  // ─── MULTI-BOARD STATE ──────────────────────────────────────
+  boards: [],
+  activeBoardId: null,
+
+  // ─── SINGLE BOARD STATE ─────────────────────────────────────
   board: null,
   lists: [],
   cards: [],
+  boardLabels: [],
+  boardUsers: [],
   activeCard: null,
-  filterQuery: '',
-  filterType: 'card',
-  boardBackground: 'bg-gradient-to-br from-blue-600 to-indigo-900', // Default background
+  searchQuery: '',
+  activeFilters: { labels: [], members: [], dueDates: [] },
+  boardBackground: 'bg-gradient-to-br from-blue-900 via-blue-700 to-blue-400',
   isLoading: false,
   error: null,
 
-  // Action to fetch board data and normalize it into our state
-  fetchBoardData: async () => {
+  // ─── HELPER: Sync a full card into cards[] and activeCard ───
+  syncCardInState: (updatedCard) => {
+    const { cards, activeCard } = get();
+    set({
+      cards: cards.map((c) => c.id === updatedCard.id ? updatedCard : c),
+      activeCard: activeCard?.id === updatedCard.id ? updatedCard : activeCard,
+    });
+  },
+
+  // ─── MULTI-BOARD ACTIONS ────────────────────────────────────
+  fetchAllBoards: async () => {
+    try {
+      const response = await axios.get(`${API}/boards`);
+      set({ boards: response.data });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching boards:', error);
+      return [];
+    }
+  },
+
+  createNewBoard: async (title, description) => {
+    try {
+      const response = await axios.post(`${API}/boards`, { title, description });
+      const newBoard = response.data;
+      set({ boards: [...get().boards, newBoard] });
+      get().switchBoard(newBoard.id);
+      return newBoard;
+    } catch (error) {
+      console.error('Error creating board:', error);
+      throw error;
+    }
+  },
+
+  switchBoard: async (boardId) => {
+    set({ activeBoardId: boardId });
+    await get().fetchBoardData(boardId);
+  },
+
+  deleteBoard: async (boardId) => {
+    try {
+      await axios.delete(`${API}/boards/${boardId}`);
+      const remaining = get().boards.filter(b => b.id !== boardId);
+      set({ boards: remaining });
+
+      if (get().activeBoardId === boardId) {
+        if (remaining.length > 0) {
+          await get().switchBoard(remaining[0].id);
+        } else {
+          set({ activeBoardId: null, board: null, lists: [], cards: [], boardLabels: [], boardUsers: [] });
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting board:', error);
+    }
+  },
+
+  // ─── FETCH BOARD BY ID ─────────────────────────────────────
+  fetchBoardData: async (boardId) => {
+    const id = boardId || get().activeBoardId;
+    if (!id) return;
+
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get('http://localhost:3000/api/boards');
+      const response = await axios.get(`${API}/boards/${id}`);
       const boardData = response.data;
 
-      // Extract lists and cards
       const extractedLists = [];
       const extractedCards = [];
 
-      // Safely destructure and normalize using optional chaining
       if (boardData?.lists) {
         boardData.lists.forEach((list) => {
-          // Extract the cards array and remove it from the list object
           const { cards, ...listWithoutCards } = list;
           extractedLists.push(listWithoutCards);
-
           if (cards && Array.isArray(cards)) {
             extractedCards.push(...cards);
           }
         });
       }
 
-      // Remove the nested lists array from the root board object safely
-      const { lists, ...boardWithoutLists } = boardData || {};
+      const { lists, labels, users, ...boardWithoutLists } = boardData || {};
 
       set({
         board: boardWithoutLists,
         lists: boardData?.lists || [],
         cards: extractedCards,
+        boardLabels: labels || [],
+        boardUsers: users || [],
         isLoading: false,
       });
     } catch (error) {
@@ -51,242 +117,324 @@ const useBoardStore = create((set, get) => ({
     }
   },
 
-  // Action to handle complex local DND reordering and async background saves
+  // ─── DND ────────────────────────────────────────────────────
   moveItemLocally: async (result) => {
     const { source, destination, type, draggableId } = result;
-
-    if (!destination) return; // Dropped outside the list
-
-    // If dropped in the exact same spot, do nothing
-    if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      return;
-    }
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     const { lists, cards } = get();
 
-    // --- REORDER LISTS ---
     if (type === 'list') {
       const newLists = Array.from(lists);
       const [movedList] = newLists.splice(source.index, 1);
       newLists.splice(destination.index, 0, movedList);
 
-      // Recalculate positions based on neighbors for the moved list
       let newPosition = 0;
       if (destination.index === 0) {
-        // Moved to the very start
         newPosition = newLists.length > 1 ? newLists[1].position / 2 : 1024;
       } else if (destination.index === newLists.length - 1) {
-        // Moved to the very end
         newPosition = newLists[newLists.length - 2].position + 1024;
       } else {
-        // Moved between two lists
         const prevPos = newLists[destination.index - 1].position;
         const nextPos = newLists[destination.index + 1].position;
         newPosition = (prevPos + nextPos) / 2;
       }
-
       movedList.position = newPosition;
-
-      // Optimistically update the UI
       set({ lists: newLists });
 
-      // Fire and forget database update
       try {
-        await axios.put(`http://localhost:3000/api/lists/${draggableId}/move`, {
+        await axios.put(`${API}/lists/${draggableId}/move`, {
           position: newPosition,
-          boardId: movedList.boardId, // Needed for standard validation
+          boardId: movedList.boardId,
         });
       } catch (error) {
-        console.error('Failed to save list movement to database:', error);
-        // In a real app we might revert the state if the save failed
+        console.error('Failed to save list movement:', error);
       }
       return;
     }
 
-    // --- REORDER CARDS ---
     if (type === 'card') {
-      const sourceListId = source.droppableId;
-      const destListId = destination.droppableId;
-      
       const newCards = Array.from(cards);
-      
-      // Find the specific card being moved
       const movedCardIndex = newCards.findIndex(c => c.id === draggableId);
       if (movedCardIndex === -1) return;
-      
       const movedCard = newCards[movedCardIndex];
-
-      // Remove the card from the primary flat array
       newCards.splice(movedCardIndex, 1);
 
-      // Get all cards in the destination list, sorted by position, EXCLUDING the dragged card 
-      // (in case we're moving within the exact same list, to avoid referencing stale data)
       const visibleDestCards = newCards
-        .filter(c => c.listId === destListId && !c.isArchived)
+        .filter(c => c.listId === destination.droppableId && !c.isArchived)
         .sort((a, b) => a.position - b.position);
 
-      // Calculate the new fractional position based on the destination neighbors
       let newPosition = 0;
       if (visibleDestCards.length === 0) {
-        // Dropping into an EMPTY list
         newPosition = 1024;
       } else if (destination.index === 0) {
-        // Dropping at the very top of a list
         newPosition = visibleDestCards[0].position / 2;
       } else if (destination.index >= visibleDestCards.length) {
-        // Dropping at the very bottom of a list
         newPosition = visibleDestCards[visibleDestCards.length - 1].position + 1024;
       } else {
-        // Dropping between two existing cards in the list
         const prevPos = visibleDestCards[destination.index - 1].position;
         const nextPos = visibleDestCards[destination.index].position;
         newPosition = (prevPos + nextPos) / 2;
       }
 
-      // Update the moved card's properties locally
-      movedCard.listId = destListId;
+      movedCard.listId = destination.droppableId;
       movedCard.position = newPosition;
-
-      // Insert it back into the master array
       newCards.push(movedCard);
-
-      // Optimistically update UI
       set({ cards: newCards });
 
-      // Fire and forget database update
       try {
-        await axios.put(`http://localhost:3000/api/cards/${draggableId}/move`, {
+        await axios.put(`${API}/cards/${draggableId}/move`, {
           position: newPosition,
-          listId: destListId 
+          listId: destination.droppableId,
         });
       } catch (error) {
-        console.error('Failed to save card movement to database:', error);
+        console.error('Failed to save card movement:', error);
       }
       return;
     }
   },
 
-  // Action to create a new list and add it to state
+  // ─── LIST CRUD ──────────────────────────────────────────────
   addList: async (title, boardId) => {
     try {
-      // Calculate position: place after the last list
       const { lists } = get();
-      const position = lists.length > 0
-        ? lists[lists.length - 1].position + 1024
-        : 1024;
-
-      const response = await axios.post('http://localhost:3000/api/lists', {
-        title,
-        boardId,
-        position,
-      });
-
-      const newList = response.data;
-
-      // Push the new list into state
-      set({ lists: [...get().lists, newList] });
-
-      return newList;
+      const position = lists.length > 0 ? lists[lists.length - 1].position + 1024 : 1024;
+      const response = await axios.post(`${API}/lists`, { title, boardId, position });
+      set({ lists: [...get().lists, response.data] });
+      return response.data;
     } catch (error) {
       console.error('Error creating list:', error);
       throw error;
     }
   },
 
-  // Action to create a new card and add it to state
+  // ─── CARD CRUD ──────────────────────────────────────────────
   addCard: async (title, listId) => {
     try {
-      // Calculate position: place after the last card in the target list
       const { cards } = get();
-      const listCards = cards
-        .filter((c) => c.listId === listId && !c.isArchived)
-        .sort((a, b) => a.position - b.position);
-
-      const position = listCards.length > 0
-        ? listCards[listCards.length - 1].position + 1024
-        : 1024;
-
-      const response = await axios.post('http://localhost:3000/api/cards', {
-        title,
-        listId,
-        position,
-      });
-
-      const newCard = response.data;
-
-      // Push the new card into the flat cards array
-      set({ cards: [...get().cards, newCard] });
-
-      return newCard;
+      const listCards = cards.filter((c) => c.listId === listId && !c.isArchived).sort((a, b) => a.position - b.position);
+      const position = listCards.length > 0 ? listCards[listCards.length - 1].position + 1024 : 1024;
+      const response = await axios.post(`${API}/cards`, { title, listId, position });
+      set({ cards: [...get().cards, response.data] });
+      return response.data;
     } catch (error) {
       console.error('Error creating card:', error);
       throw error;
     }
   },
 
-  // Action to delete a list optimistically
   removeList: async (listId) => {
-    // Optimistically remove from UI immediately
     const { lists, cards } = get();
     set({
       lists: lists.filter((l) => l.id !== listId),
-      cards: cards.filter((c) => c.listId !== listId), // Also remove all cards belonging to this list
+      cards: cards.filter((c) => c.listId !== listId),
     });
-
-    // Fire and forget the API call
-    try {
-      await axios.delete(`http://localhost:3000/api/lists/${listId}`);
-    } catch (error) {
-      console.error('Failed to delete list from database:', error);
-    }
+    try { await axios.delete(`${API}/lists/${listId}`); }
+    catch (error) { console.error('Failed to delete list:', error); }
   },
 
-  // Action to delete a card optimistically
   removeCard: async (cardId) => {
-    // Optimistically remove from UI immediately
     const { cards } = get();
-    set({
-      cards: cards.filter((c) => c.id !== cardId),
-    });
-
-    // Fire and forget the API call
-    try {
-      await axios.delete(`http://localhost:3000/api/cards/${cardId}`);
-    } catch (error) {
-      console.error('Failed to delete card from database:', error);
-    }
+    set({ cards: cards.filter((c) => c.id !== cardId) });
+    try { await axios.delete(`${API}/cards/${cardId}`); }
+    catch (error) { console.error('Failed to delete card:', error); }
   },
 
-  // Modal actions
+  archiveList: async (listId) => {
+    const { lists, cards } = get();
+    set({
+      lists: lists.filter((l) => l.id !== listId),
+      cards: cards.filter((c) => c.listId !== listId),
+    });
+    try { await axios.put(`${API}/lists/${listId}/archive`); }
+    catch (error) { console.error('Failed to archive list:', error); }
+  },
+
+  archiveCard: async (cardId) => {
+    const { cards } = get();
+    set({ cards: cards.filter((c) => c.id !== cardId) });
+    try { await axios.put(`${API}/cards/${cardId}/archive`); }
+    catch (error) { console.error('Failed to archive card:', error); }
+  },
+
+  // ─── MODAL ──────────────────────────────────────────────────
   openModal: (card) => set({ activeCard: card }),
   closeModal: () => set({ activeCard: null }),
 
-  // Action to update card details and sync with backend
+  // ─── UPDATE CARD (title, description, dueDate) ─────────────
   updateCard: async (id, updates) => {
     try {
-      const response = await axios.put(`http://localhost:3000/api/cards/${id}`, updates);
-      const updatedCard = response.data;
-
-      // Merge updates into the matching card in state
-      const { cards, activeCard } = get();
-      set({
-        cards: cards.map((c) => c.id === id ? { ...c, ...updatedCard } : c),
-        // Also update activeCard if it's the one being edited
-        activeCard: activeCard?.id === id ? { ...activeCard, ...updatedCard } : activeCard,
-      });
-
-      return updatedCard;
+      const response = await axios.put(`${API}/cards/${id}`, updates);
+      get().syncCardInState(response.data);
+      return response.data;
     } catch (error) {
       console.error('Error updating card:', error);
       throw error;
     }
   },
 
-  // Filter actions
-  setFilterQuery: (query) => set({ filterQuery: query }),
-  setFilterType: (type) => set({ filterType: type }),
+  // ─── LABEL ACTIONS ──────────────────────────────────────────
+  createLabel: async (boardId, title, color) => {
+    try {
+      const response = await axios.post(`${API}/boards/${boardId}/labels`, { title, color });
+      set({ boardLabels: [...get().boardLabels, response.data] });
+    } catch (error) {
+      console.error('Error creating label:', error);
+    }
+  },
 
-  // Board Background action
+  toggleCardLabel: async (cardId, labelId) => {
+    try {
+      const response = await axios.post(`${API}/cards/${cardId}/labels/${labelId}/toggle`);
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error toggling label:', error);
+    }
+  },
+
+  // ─── MEMBER ACTIONS ─────────────────────────────────────────
+  toggleCardMember: async (cardId, userId) => {
+    try {
+      const { cards } = get();
+      const card = cards.find(c => c.id === cardId);
+      const hasMember = card?.cardMembers?.some(cm => cm.userId === userId);
+      let response;
+      if (hasMember) {
+        response = await axios.delete(`${API}/cards/${cardId}/members/${userId}`);
+      } else {
+        response = await axios.post(`${API}/cards/${cardId}/members/${userId}`);
+      }
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error toggling member:', error);
+    }
+  },
+
+  // ─── DUE DATE ───────────────────────────────────────────────
+  updateCardDueDate: async (cardId, dueDate) => {
+    try {
+      const response = await axios.put(`${API}/cards/${cardId}`, { dueDate });
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error updating due date:', error);
+    }
+  },
+
+  // ─── CHECKLIST ACTIONS ──────────────────────────────────────
+  addChecklist: async (cardId, title) => {
+    try {
+      const response = await axios.post(`${API}/cards/${cardId}/checklists`, { title });
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error creating checklist:', error);
+    }
+  },
+
+  deleteChecklist: async (cardId, checklistId) => {
+    try {
+      const response = await axios.delete(`${API}/cards/${cardId}/checklists/${checklistId}`);
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error deleting checklist:', error);
+    }
+  },
+
+  addChecklistItem: async (checklistId, content) => {
+    try {
+      const response = await axios.post(`${API}/checklists/${checklistId}/items`, { content });
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error adding checklist item:', error);
+    }
+  },
+
+  // ─── ATTACHMENTS ──────────────────────────────────────────────
+  addAttachment: async (cardId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await axios.post(`${API}/cards/${cardId}/attachments`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+    }
+  },
+
+  deleteAttachment: async (cardId, attachmentId) => {
+    try {
+      const response = await axios.delete(`${API}/cards/${cardId}/attachments/${attachmentId}`);
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+    }
+  },
+
+  toggleChecklistItem: async (checklistId, itemId) => {
+    try {
+      const response = await axios.patch(`${API}/checklists/${checklistId}/items/${itemId}`);
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error toggling checklist item:', error);
+    }
+  },
+
+  deleteChecklistItem: async (checklistId, itemId) => {
+    try {
+      const response = await axios.delete(`${API}/checklists/${checklistId}/items/${itemId}`);
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error deleting checklist item:', error);
+    }
+  },
+
+  // ─── SEARCH & ADVANCED FILTERS ─────────────────────────────
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  
+  toggleLabelFilter: (labelId) => set((state) => {
+    const isSelected = state.activeFilters.labels.includes(labelId);
+    return {
+      activeFilters: {
+        ...state.activeFilters,
+        labels: isSelected
+          ? state.activeFilters.labels.filter(id => id !== labelId)
+          : [...state.activeFilters.labels, labelId]
+      }
+    };
+  }),
+
+  toggleMemberFilter: (userId) => set((state) => {
+    const isSelected = state.activeFilters.members.includes(userId);
+    return {
+      activeFilters: {
+        ...state.activeFilters,
+        members: isSelected
+          ? state.activeFilters.members.filter(id => id !== userId)
+          : [...state.activeFilters.members, userId]
+      }
+    };
+  }),
+
+  toggleDueDateFilter: (option) => set((state) => {
+    const current = state.activeFilters.dueDates;
+    const updated = current.includes(option) 
+      ? current.filter(o => o !== option) 
+      : [...current, option];
+    return { 
+      activeFilters: { ...state.activeFilters, dueDates: updated } 
+    };
+  }),
+
+  clearFilters: () => set({ 
+    searchQuery: '', 
+    activeFilters: { labels: [], members: [], dueDates: [] } 
+  }),
+
+  // ─── BACKGROUND ──────────────────────────────────────────────
   setBoardBackground: (bg) => set({ boardBackground: bg }),
 }));
 

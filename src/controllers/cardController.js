@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const { fullCardInclude } = require('./boardController');
 
 // 1. Create a Card
 const createCard = async (req, res) => {
@@ -9,7 +10,7 @@ const createCard = async (req, res) => {
       return res.status(400).json({ error: 'listId and title are required' });
     }
 
-    // Auto-calculate position if not provided: find the highest position in the list and add 1024
+    // Auto-calculate position if not provided
     let finalPosition = position;
     if (finalPosition === undefined) {
       const lastCard = await prisma.card.findFirst({
@@ -28,6 +29,7 @@ const createCard = async (req, res) => {
         dueDate: dueDate ? new Date(dueDate) : null,
         reminderDate: reminderDate ? new Date(reminderDate) : null,
       },
+      include: fullCardInclude,
     });
 
     res.status(201).json(card);
@@ -41,7 +43,6 @@ const createCard = async (req, res) => {
 };
 
 // 2. Move a Card (Drag and Drop)
-// Handles updating order within a list, or moving horizontally to a new list
 const moveCard = async (req, res) => {
   try {
     const { id } = req.params;
@@ -51,10 +52,7 @@ const moveCard = async (req, res) => {
       return res.status(400).json({ error: 'position is required' });
     }
 
-    // Build the dynamic update object
     const updateData = { position };
-
-    // If a new listId is passed, that means it crossed over into a new column
     if (listId) {
       updateData.listId = listId;
     }
@@ -79,10 +77,7 @@ const moveCard = async (req, res) => {
 
 const getCards = async (req, res) => {
   try {
-    // Tell Prisma to fetch all records from the 'card' table
     const cards = await prisma.card.findMany();
-
-    // Send the data back to the browser/Postman as JSON
     res.status(200).json(cards);
   } catch (error) {
     console.error(error);
@@ -109,24 +104,25 @@ const deleteCard = async (req, res) => {
   }
 };
 
-// 5. Update Card Details (title, description, etc.)
+// 5. Update Card Details (title, description, dueDate)
 const updateCardDetails = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { title, description, dueDate } = req.body;
 
-    // Build update data dynamically so we only update fields that were sent
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
+    if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: 'At least one field (title or description) is required' });
+      return res.status(400).json({ error: 'At least one field (title, description, or dueDate) is required' });
     }
 
     const card = await prisma.card.update({
       where: { id },
       data: updateData,
+      include: fullCardInclude,
     });
 
     res.status(200).json(card);
@@ -139,10 +135,24 @@ const updateCardDetails = async (req, res) => {
   }
 };
 
+// 6. Archive a Card
+const archiveCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.card.update({ where: { id }, data: { isArchived: true } });
+    res.status(200).json({ message: 'Card archived successfully' });
+  } catch (err) {
+    console.error('Error archiving card:', err);
+    if (err.code === 'P2025') return res.status(404).json({ error: 'Card not found' });
+    res.status(500).json({ error: 'Internal server error while archiving card' });
+  }
+};
+
 module.exports = {
   createCard,
   moveCard,
   getCards,
   deleteCard,
   updateCardDetails,
+  archiveCard,
 };

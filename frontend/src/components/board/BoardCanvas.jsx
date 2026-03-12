@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import useBoardStore from '../../store/useBoardStore';
 import List from './List';
 import AddListForm from './AddListForm';
@@ -6,12 +6,7 @@ import { Plus, Layout } from 'lucide-react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 
 const BoardCanvas = () => {
-  const { lists, board, fetchBoardData, isLoading, error, filterQuery, filterType } = useBoardStore();
-
-  useEffect(() => {
-    // Dispatch fetchBoardData to hit the backend API on load.
-    fetchBoardData();
-  }, [fetchBoardData]);
+  const { lists, board, isLoading, error, filterQuery, filterType } = useBoardStore();
 
   // Handle the end of a drag event
   const handleDragEnd = (result) => {
@@ -63,10 +58,9 @@ const BoardCanvas = () => {
                  : 'There are no lists or cards here. Start building your workflow.'}
              </p>
              {!filterQuery && (
-               <button className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-6 py-3 font-medium transition-colors shadow-lg flex items-center gap-2">
-                 <Plus size={18} />
-                 Add your first list
-               </button>
+               <div className="flex h-full items-start justify-center pt-10">
+                 <AddListForm />
+               </div>
              )}
           </div>
         ) : (

@@ -1,35 +1,54 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Card from './Card';
-import { MoreHorizontal, Plus, X, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Plus, X, Trash2, Archive, FoldHorizontal, UnfoldHorizontal } from 'lucide-react';
 import useBoardStore from '../../store/useBoardStore';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 
 const List = ({ list, index }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [cardTitle, setCardTitle] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const textareaRef = useRef(null);
 
-  // Get all cards from the store, filter to only the ones belonging to this list, and sort by position
   const allCards = useBoardStore((state) => state.cards);
   const addCard = useBoardStore((state) => state.addCard);
   const removeList = useBoardStore((state) => state.removeList);
-  const filterQuery = useBoardStore((state) => state.filterQuery);
-  const filterType = useBoardStore((state) => state.filterType);
+  const archiveList = useBoardStore((state) => state.archiveList);
+  const searchQuery = useBoardStore((state) => state.searchQuery);
+  const activeFilters = useBoardStore((state) => state.activeFilters);
   
   const listCards = allCards
     .filter((card) => card.listId === list.id && !card.isArchived)
     .sort((a, b) => a.position - b.position)
-    .filter((card) =>
-      filterQuery && filterType === 'card'
-        ? card.title.toLowerCase().includes(filterQuery.toLowerCase())
-        : true
-    );
+    .filter((card) => {
+      // 1. Search filter
+      const matchesSearch = !searchQuery || card.title.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // 2. Labels filter
+      const matchesLabels = activeFilters.labels.length === 0 || 
+        activeFilters.labels.some(id => card.cardLabels?.some(cl => cl.labelId === id));
+        
+      // 3. Members filter
+      const matchesMembers = activeFilters.members.length === 0 || 
+        activeFilters.members.some(id => card.cardMembers?.some(cm => cm.userId === id));
 
-  // Optional placeholder logic for list color bar based on index or property
-  const listBorderColors = ['border-t-blue-500', 'border-t-yellow-500', 'border-t-green-500'];
-  const colorClass = listBorderColors[Math.floor(list.position) % listBorderColors.length] || 'border-t-transparent';
+      // 4. Due Date filter
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const matchesDue = activeFilters.dueDates.length === 0 || activeFilters.dueDates.some(filter => {
+        if (filter === 'noDate') return !card.dueDate;
+        if (!card.dueDate) return false;
+        
+        const cardDate = new Date(card.dueDate);
+        if (filter === 'overdue') return cardDate < now;
+        if (filter === 'nextDay') return cardDate >= now && cardDate <= tomorrow;
+        return false;
+      });
 
-  // Auto-focus the textarea when adding mode activates
+      return matchesSearch && matchesLabels && matchesMembers && matchesDue;
+    });
+
   useEffect(() => {
     if (isAddingCard && textareaRef.current) {
       textareaRef.current.focus();
@@ -38,11 +57,9 @@ const List = ({ list, index }) => {
 
   const handleAddCard = async () => {
     if (!cardTitle.trim()) return;
-
     try {
       await addCard(cardTitle.trim(), list.id);
       setCardTitle('');
-      // Keep form open for rapid card entry
     } catch (err) {
       console.error('Failed to add card:', err);
     }
@@ -53,11 +70,43 @@ const List = ({ list, index }) => {
     setCardTitle('');
   };
 
+  // ─── COLLAPSED VIEW ────────────────────────────────────────
+  const listColors = ['bg-[#5a481c]', 'bg-[#1e462d]', 'bg-[#4b1e36]', 'bg-[#1b3f54]', 'bg-[#502418]'];
+  const listBg = listColors[index % listColors.length];
+
+  if (isCollapsed) {
+    return (
+      <Draggable draggableId={list.id} index={index}>
+        {(provided) => (
+          <div
+            className={`w-14 max-h-full flex flex-col items-center rounded-xl flex-shrink-0 shadow-xl border border-black/20 py-3 cursor-pointer hover:brightness-110 transition-all ${listBg}`}
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            onClick={() => setIsCollapsed(false)}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsCollapsed(false); }}
+              className="p-1.5 rounded text-gray-400 hover:bg-gray-700 hover:text-white transition-colors mb-2"
+            >
+              <UnfoldHorizontal size={16} />
+            </button>
+            <span className="text-gray-300 text-xs font-semibold [writing-mode:vertical-lr] tracking-wider whitespace-nowrap">
+              {list.title}
+            </span>
+            <span className="text-gray-500 text-[10px] mt-2">{listCards.length}</span>
+          </div>
+        )}
+      </Draggable>
+    );
+  }
+
+  // ─── NORMAL (EXPANDED) VIEW ─────────────────────────────────
   return (
     <Draggable draggableId={list.id} index={index}>
       {(provided) => (
         <div 
-          className={`w-72 max-h-full flex flex-col bg-gray-900/80 dark:bg-[#22272b] dark:text-[#b6c2cf] rounded-xl flex-shrink-0 border-t-[3px] shadow-lg ${colorClass}`}
+          className={`w-72 max-h-full flex flex-col text-[#b6c2cf] rounded-xl flex-shrink-0 shadow-xl border border-black/20 ${listBg}`}
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
@@ -66,10 +115,25 @@ const List = ({ list, index }) => {
           {/* Header */}
           <div className="shrink-0 px-3 pt-3 pb-2 flex justify-between items-center group cursor-pointer text-gray-200 hover:bg-gray-800/50 rounded-t-xl transition-colors">
             <h3 className="font-semibold text-sm pl-1 truncate pr-2">{list.title}</h3>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsCollapsed(true); }}
+                className="p-1.5 rounded text-gray-400 hover:bg-gray-700 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                title="Collapse list"
+              >
+                <FoldHorizontal size={14} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); archiveList(list.id); }}
+                className="p-1.5 rounded text-gray-400 hover:bg-orange-500/20 hover:text-orange-400 transition-colors opacity-0 group-hover:opacity-100"
+                title="Archive list"
+              >
+                <Archive size={14} />
+              </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); removeList(list.id); }}
                 className="p-1.5 rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                title="Delete list"
               >
                 <Trash2 size={14} />
               </button>
@@ -132,7 +196,7 @@ const List = ({ list, index }) => {
             ) : (
               <button
                 onClick={() => setIsAddingCard(true)}
-                className="flex items-center gap-2 p-2 w-full hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 p-2 mx-2 mb-2 w-[calc(100%-16px)] hover:bg-black/20 rounded-lg text-gray-300 hover:text-white transition-colors"
               >
                 <Plus size={16} />
                 <span className="text-sm font-medium">Add a card</span>
@@ -147,4 +211,3 @@ const List = ({ list, index }) => {
 };
 
 export default List;
-

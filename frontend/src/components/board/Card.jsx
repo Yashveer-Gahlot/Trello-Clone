@@ -32,7 +32,7 @@ const Card = ({ card, index }) => {
     <Draggable draggableId={card.id} index={index}>
       {(provided) => (
         <div 
-          className="bg-gray-800 hover:bg-gray-700/80 rounded-lg p-3 text-sm cursor-pointer border border-gray-700 shadow-sm transition-colors group mb-3 relative"
+          className="bg-[#22272b] hover:border-gray-500 border border-transparent text-gray-200 p-2.5 rounded-lg shadow-sm cursor-grab active:cursor-grabbing group mb-3 relative transition-colors"
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}

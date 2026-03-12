@@ -113,9 +113,23 @@ const moveList = async (req, res) => {
   }
 };
 
+// 5. Archive a List
+const archiveList = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.list.update({ where: { id }, data: { isArchived: true } });
+    res.status(200).json({ message: 'List archived successfully' });
+  } catch (err) {
+    console.error('Error archiving list:', err);
+    if (err.code === 'P2025') return res.status(404).json({ error: 'List not found' });
+    res.status(500).json({ error: 'Internal server error while archiving list' });
+  }
+};
+
 module.exports = {
   createList,
   updateListPosition,
   deleteList,
   moveList,
+  archiveList,
 };
