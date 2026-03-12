@@ -6,7 +6,7 @@ import { Plus, Layout } from 'lucide-react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 
 const BoardCanvas = () => {
-  const { lists, board, fetchBoardData, isLoading, error } = useBoardStore();
+  const { lists, board, fetchBoardData, isLoading, error, filterQuery, filterType } = useBoardStore();
 
   useEffect(() => {
     // Dispatch fetchBoardData to hit the backend API on load.
@@ -19,6 +19,11 @@ const BoardCanvas = () => {
     const { moveItemLocally } = useBoardStore.getState();
     moveItemLocally(result);
   };
+
+  // Only filter lists when filterType is 'list'; card filtering is handled inside List.jsx
+  const filteredLists = (filterQuery && filterType === 'list')
+    ? lists.filter((list) => list.title.toLowerCase().includes(filterQuery.toLowerCase()))
+    : lists;
 
   if (isLoading) {
     return (
@@ -42,21 +47,27 @@ const BoardCanvas = () => {
   // Define an empty state or the main board view
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <main className="flex-1 w-full relative">
-        {lists.length === 0 ? (
+      <main className="flex-1 w-full relative z-0">
+        {filteredLists.length === 0 ? (
           // Perfectly centered empty state
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
              <div className="w-24 h-24 mb-6 text-white/20 bg-white/5 rounded-3xl flex items-center justify-center shadow-inner">
                <Layout size={48} />
              </div>
-             <h2 className="text-2xl font-bold text-white mb-2">Your Board is Empty</h2>
+             <h2 className="text-2xl font-bold text-white mb-2">
+               {filterQuery ? 'No lists match your filter' : 'Your Board is Empty'}
+             </h2>
              <p className="text-white/60 max-w-md mb-8">
-               There are no lists or cards here. Start building your workflow.
+               {filterQuery
+                 ? `No lists found matching "${filterQuery}". Try a different search.`
+                 : 'There are no lists or cards here. Start building your workflow.'}
              </p>
-             <button className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-6 py-3 font-medium transition-colors shadow-lg flex items-center gap-2">
-               <Plus size={18} />
-               Add your first list
-             </button>
+             {!filterQuery && (
+               <button className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-6 py-3 font-medium transition-colors shadow-lg flex items-center gap-2">
+                 <Plus size={18} />
+                 Add your first list
+               </button>
+             )}
           </div>
         ) : (
           // Droppable Container for Lists (Horizontal matching Trello's exact look)
@@ -67,7 +78,7 @@ const BoardCanvas = () => {
                 ref={provided.innerRef}
                 {...provided.droppableProps}
               >
-                {lists.map((list, index) => (
+                {filteredLists.map((list, index) => (
                   <div key={list.id} className="shrink-0 h-full">
                     <List list={list} index={index} />
                   </div>

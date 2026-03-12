@@ -6,6 +6,9 @@ const useBoardStore = create((set, get) => ({
   lists: [],
   cards: [],
   activeCard: null,
+  filterQuery: '',
+  filterType: 'card',
+  boardBackground: 'bg-gradient-to-br from-blue-600 to-indigo-900', // Default background
   isLoading: false,
   error: null,
 
@@ -278,6 +281,13 @@ const useBoardStore = create((set, get) => ({
       throw error;
     }
   },
+
+  // Filter actions
+  setFilterQuery: (query) => set({ filterQuery: query }),
+  setFilterType: (type) => set({ filterType: type }),
+
+  // Board Background action
+  setBoardBackground: (bg) => set({ boardBackground: bg }),
 }));
 
 export default useBoardStore;

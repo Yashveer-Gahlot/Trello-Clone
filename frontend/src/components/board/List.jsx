@@ -13,10 +13,17 @@ const List = ({ list, index }) => {
   const allCards = useBoardStore((state) => state.cards);
   const addCard = useBoardStore((state) => state.addCard);
   const removeList = useBoardStore((state) => state.removeList);
+  const filterQuery = useBoardStore((state) => state.filterQuery);
+  const filterType = useBoardStore((state) => state.filterType);
   
   const listCards = allCards
     .filter((card) => card.listId === list.id && !card.isArchived)
-    .sort((a, b) => a.position - b.position);
+    .sort((a, b) => a.position - b.position)
+    .filter((card) =>
+      filterQuery && filterType === 'card'
+        ? card.title.toLowerCase().includes(filterQuery.toLowerCase())
+        : true
+    );
 
   // Optional placeholder logic for list color bar based on index or property
   const listBorderColors = ['border-t-blue-500', 'border-t-yellow-500', 'border-t-green-500'];
@@ -50,7 +57,7 @@ const List = ({ list, index }) => {
     <Draggable draggableId={list.id} index={index}>
       {(provided) => (
         <div 
-          className={`w-72 max-h-full flex flex-col bg-gray-900/80 rounded-xl flex-shrink-0 border-t-[3px] shadow-lg ${colorClass}`}
+          className={`w-72 max-h-full flex flex-col bg-gray-900/80 dark:bg-[#22272b] dark:text-[#b6c2cf] rounded-xl flex-shrink-0 border-t-[3px] shadow-lg ${colorClass}`}
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
