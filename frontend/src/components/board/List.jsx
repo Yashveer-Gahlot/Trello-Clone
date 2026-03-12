@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Card from './Card';
-import { MoreHorizontal, Plus, X } from 'lucide-react';
+import { MoreHorizontal, Plus, X, Trash2 } from 'lucide-react';
 import useBoardStore from '../../store/useBoardStore';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 
@@ -12,6 +12,7 @@ const List = ({ list, index }) => {
   // Get all cards from the store, filter to only the ones belonging to this list, and sort by position
   const allCards = useBoardStore((state) => state.cards);
   const addCard = useBoardStore((state) => state.addCard);
+  const removeList = useBoardStore((state) => state.removeList);
   
   const listCards = allCards
     .filter((card) => card.listId === list.id && !card.isArchived)
@@ -58,9 +59,17 @@ const List = ({ list, index }) => {
           {/* Header */}
           <div className="shrink-0 px-3 pt-3 pb-2 flex justify-between items-center group cursor-pointer text-gray-200 hover:bg-gray-800/50 rounded-t-xl transition-colors">
             <h3 className="font-semibold text-sm pl-1 truncate pr-2">{list.title}</h3>
-            <button className="p-1.5 rounded text-gray-400 hover:bg-gray-700 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
-              <MoreHorizontal size={16} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={(e) => { e.stopPropagation(); removeList(list.id); }}
+                className="p-1.5 rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 size={14} />
+              </button>
+              <button className="p-1.5 rounded text-gray-400 hover:bg-gray-700 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
           </div>
 
           {/* Cards Scrollable Area */}

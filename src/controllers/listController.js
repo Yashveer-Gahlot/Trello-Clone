@@ -76,7 +76,7 @@ const deleteList = async (req, res) => {
       where: { id },
     });
 
-    res.status(204).send();
+    res.status(200).json({ message: 'List deleted successfully' });
   } catch (err) {
     console.error('Error deleting list:', err);
 

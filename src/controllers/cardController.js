@@ -90,8 +90,59 @@ const getCards = async (req, res) => {
   }
 };
 
+// 4. Delete a Card
+const deleteCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.card.delete({
+      where: { id },
+    });
+
+    res.status(200).json({ message: 'Card deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting card:', err);
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+    res.status(500).json({ error: 'Internal server error while deleting card' });
+  }
+};
+
+// 5. Update Card Details (title, description, etc.)
+const updateCardDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
+
+    // Build update data dynamically so we only update fields that were sent
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'At least one field (title or description) is required' });
+    }
+
+    const card = await prisma.card.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.status(200).json(card);
+  } catch (err) {
+    console.error('Error updating card details:', err);
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+    res.status(500).json({ error: 'Internal server error while updating card' });
+  }
+};
+
 module.exports = {
   createCard,
   moveCard,
   getCards,
+  deleteCard,
+  updateCardDetails,
 };

@@ -5,6 +5,7 @@ const useBoardStore = create((set, get) => ({
   board: null,
   lists: [],
   cards: [],
+  activeCard: null,
   isLoading: false,
   error: null,
 
@@ -216,6 +217,64 @@ const useBoardStore = create((set, get) => ({
       return newCard;
     } catch (error) {
       console.error('Error creating card:', error);
+      throw error;
+    }
+  },
+
+  // Action to delete a list optimistically
+  removeList: async (listId) => {
+    // Optimistically remove from UI immediately
+    const { lists, cards } = get();
+    set({
+      lists: lists.filter((l) => l.id !== listId),
+      cards: cards.filter((c) => c.listId !== listId), // Also remove all cards belonging to this list
+    });
+
+    // Fire and forget the API call
+    try {
+      await axios.delete(`http://localhost:3000/api/lists/${listId}`);
+    } catch (error) {
+      console.error('Failed to delete list from database:', error);
+    }
+  },
+
+  // Action to delete a card optimistically
+  removeCard: async (cardId) => {
+    // Optimistically remove from UI immediately
+    const { cards } = get();
+    set({
+      cards: cards.filter((c) => c.id !== cardId),
+    });
+
+    // Fire and forget the API call
+    try {
+      await axios.delete(`http://localhost:3000/api/cards/${cardId}`);
+    } catch (error) {
+      console.error('Failed to delete card from database:', error);
+    }
+  },
+
+  // Modal actions
+  openModal: (card) => set({ activeCard: card }),
+  closeModal: () => set({ activeCard: null }),
+
+  // Action to update card details and sync with backend
+  updateCard: async (id, updates) => {
+    try {
+      const response = await axios.put(`http://localhost:3000/api/cards/${id}`, updates);
+      const updatedCard = response.data;
+
+      // Merge updates into the matching card in state
+      const { cards, activeCard } = get();
+      set({
+        cards: cards.map((c) => c.id === id ? { ...c, ...updatedCard } : c),
+        // Also update activeCard if it's the one being edited
+        activeCard: activeCard?.id === id ? { ...activeCard, ...updatedCard } : activeCard,
+      });
+
+      return updatedCard;
+    } catch (error) {
+      console.error('Error updating card:', error);
       throw error;
     }
   },

@@ -1,10 +1,13 @@
 import React from 'react';
-import { AlignLeft, CheckSquare, MessageSquare, Paperclip } from 'lucide-react';
+import { AlignLeft, CheckSquare, MessageSquare, Paperclip, Trash2 } from 'lucide-react';
 import { Draggable } from '@hello-pangea/dnd';
+import useBoardStore from '../../store/useBoardStore';
 
 const Card = ({ card, index }) => {
+  const removeCard = useBoardStore((state) => state.removeCard);
+  const openModal = useBoardStore((state) => state.openModal);
+
   // Mock data for UI presentation since we haven't fetched all relations yet
-  // In a real app, these would come from card.attachments, card.checklists, etc.
   const hasDescription = !!card.description;
   const commentCount = card.comments?.length || 0;
   const attachmentCount = card.attachments?.length || 0;
@@ -29,11 +32,19 @@ const Card = ({ card, index }) => {
     <Draggable draggableId={card.id} index={index}>
       {(provided) => (
         <div 
-          className="bg-gray-800 hover:bg-gray-700/80 rounded-lg p-3 text-sm cursor-pointer border border-gray-700 shadow-sm transition-colors group mb-3"
+          className="bg-gray-800 hover:bg-gray-700/80 rounded-lg p-3 text-sm cursor-pointer border border-gray-700 shadow-sm transition-colors group mb-3 relative"
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          onClick={() => openModal(card)}
         >
+          {/* Delete button - visible on hover */}
+          <button
+            onClick={(e) => { e.stopPropagation(); removeCard(card.id); }}
+            className="absolute top-2 right-2 p-1 rounded text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 z-10"
+          >
+            <Trash2 size={14} />
+          </button>
           
           {/* Optional Cover Image */}
           {coverImage && (
