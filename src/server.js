@@ -11,6 +11,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const cardRoutes = require('./routes/cardRoutes');
+const boardRoutes = require('./routes/boardRoutes');
+const listRoutes = require('./routes/listRoutes');
 
 // Basic health check route
 app.get('/', (req, res) => {
@@ -18,6 +20,8 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
+app.use('/api/boards', boardRoutes);
+app.use('/api/lists', listRoutes);
 app.use('/api/cards', cardRoutes);
 
 // Start the server

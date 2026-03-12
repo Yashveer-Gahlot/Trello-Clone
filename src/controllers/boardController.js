@@ -24,13 +24,12 @@ const createBoard = async (req, res) => {
   }
 };
 
-// 2. Fetch a Single Board with nested Lists and Cards ordered by position
+// 2. Fetch the Default/First Board with nested Lists and Cards
 const getBoardDetails = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const board = await prisma.board.findUnique({
-      where: { id },
+    // For this generic route, we just get the very first board in the database
+    // In a real app with multiple boards, we would filter by a user's ID or URL params
+    const board = await prisma.board.findFirst({
       include: {
         lists: {
           orderBy: {
@@ -39,7 +38,7 @@ const getBoardDetails = async (req, res) => {
           include: {
             cards: {
               where: {
-                isArchived: false, // Optionally filter out archived cards by default
+                isArchived: false,
               },
               orderBy: {
                 position: 'asc',
@@ -48,13 +47,16 @@ const getBoardDetails = async (req, res) => {
           },
         },
       },
+      orderBy: {
+        createdAt: 'asc',
+      }
     });
 
     if (!board) {
-      return res.status(404).json({ error: 'Board not found' });
+      return res.status(200).json({ id: null, title: 'Welcome Board', lists: [] });
     }
 
-    res.json(board);
+    res.status(200).json(board);
   } catch (err) {
     console.error('Error fetching board details:', err);
     res.status(500).json({ error: 'Internal server error while fetching board' });

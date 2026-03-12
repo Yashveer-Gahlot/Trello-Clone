@@ -5,8 +5,18 @@ const createCard = async (req, res) => {
   try {
     const { listId, title, description, position, dueDate, reminderDate } = req.body;
 
-    if (!listId || !title || position === undefined) {
-      return res.status(400).json({ error: 'listId, title, and position are required' });
+    if (!listId || !title) {
+      return res.status(400).json({ error: 'listId and title are required' });
+    }
+
+    // Auto-calculate position if not provided: find the highest position in the list and add 1024
+    let finalPosition = position;
+    if (finalPosition === undefined) {
+      const lastCard = await prisma.card.findFirst({
+        where: { listId },
+        orderBy: { position: 'desc' },
+      });
+      finalPosition = lastCard ? lastCard.position + 1024 : 1024;
     }
 
     const card = await prisma.card.create({
@@ -14,7 +24,7 @@ const createCard = async (req, res) => {
         listId,
         title,
         description,
-        position,
+        position: finalPosition,
         dueDate: dueDate ? new Date(dueDate) : null,
         reminderDate: reminderDate ? new Date(reminderDate) : null,
       },
