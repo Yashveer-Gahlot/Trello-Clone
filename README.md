@@ -28,7 +28,10 @@ A full-stack project management application inspired by Trello, allowing users t
 - PostgreSQL database
 
 ### 1. Backend Setup
-1. Open a terminal in the root directory.
+1. Open a terminal and navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
 2. Install dependencies:
    ```bash
    npm install
@@ -71,7 +74,7 @@ A full-stack project management application inspired by Trello, allowing users t
 
 ## Assumptions Made
 
-1. **Authentication**: Authentication is simplified for the current stage. A dummy middleware (`src/middleware/auth.js`) automatically fetches the first user or creates a dummy user ("Yash Gahlot") if none exists. There is no explicit login or signup flow implemented, so all requests act on behalf of this dummy user.
+1. **Authentication**: Authentication is simplified for the current stage. A dummy middleware (`backend/src/middleware/auth.js`) automatically fetches the first user or creates a dummy user ("Yash Gahlot") if none exists. There is no explicit login or signup flow implemented, so all requests act on behalf of this dummy user.
 2. **File Storage**: Uploaded attachments are stored directly in the local file system within the `uploads/` directory on the server.
 3. **Database Setup**: The PostgreSQL instance is assumed to be running on either a local machine or a cloud provider as configured by the `DATABASE_URL`.
 
@@ -128,4 +131,4 @@ A full-stack project management application inspired by Trello, allowing users t
 2. Set the 'Framework Preset' to **Vite**.
 3. Expand 'Environment Variables' and add:
    - `DATABASE_URL`: Your production PostgreSQL connection pool URL.
-4. Click **Deploy**. Vercel will automatically build the frontend into `frontend/dist` and use `api/index.js` as the backend entry for Serverless Functions.
+4. Click **Deploy**. Vercel will automatically build the frontend into `frontend/dist` and use `backend/api/index.js` as the backend entry for Serverless Functions.
