@@ -1,20 +1,41 @@
 import React, { useState } from 'react';
-import { Trello, Share2, Filter, Search, User, MoreHorizontal, X, ChevronLeft, ChevronDown, Image, Plus, LayoutGrid, Trash2 } from 'lucide-react';
+import { Trello, Share2, Filter, Search, User, MoreHorizontal, X, ChevronLeft, ChevronDown, Image, Plus, LayoutGrid, Trash2, Palette, Droplets, Camera } from 'lucide-react';
 import useBoardStore from '../../store/useBoardStore';
 
-const gradientOptions = [
-  'bg-gradient-to-br from-blue-900 via-blue-700 to-blue-400',
-  'bg-gradient-to-br from-purple-900 via-purple-700 to-pink-400',
-  'bg-gradient-to-br from-emerald-900 via-emerald-700 to-teal-400',
-  'bg-gradient-to-br from-orange-900 via-orange-700 to-amber-400',
-  'bg-gradient-to-br from-slate-900 via-slate-700 to-slate-400',
+// ─── SOLID COLORS ─── High-contrast solids that won't blend with list backgrounds
+const solidColorOptions = [
+  { label: 'Ocean',       css: 'bg-[#0079bf]' },
+  { label: 'Forest',      css: 'bg-[#519839]' },
+  { label: 'Berry',       css: 'bg-[#b04632]' },
+  { label: 'Sunset',      css: 'bg-[#d29034]' },
+  { label: 'Plum',        css: 'bg-[#89609e]' },
+  { label: 'Rose',        css: 'bg-[#cd5a91]' },
+  { label: 'Sky',         css: 'bg-[#00aecc]' },
+  { label: 'Lime',        css: 'bg-[#4bbf6b]' },
+  { label: 'Charcoal',    css: 'bg-[#344563]' },
+  { label: 'Storm',       css: 'bg-[#505f79]' },
 ];
 
-const imageOptions = [
-  'https://images.unsplash.com/photo-1506744626753-1fa28f621b02?auto=format&fit=crop&w=1920&q=100',
-  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1920&q=100',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=100',
-  'https://images.unsplash.com/photo-1444464666168-49b19e88145e?auto=format&fit=crop&w=1920&q=100',
+// ─── GRADIENTS ─── Premium Trello-style vibrant gradients
+const gradientOptions = [
+  { label: 'Classic Blue',  css: 'bg-gradient-to-br from-[#0052cc] via-[#0079bf] to-[#00c2e0]' },
+  { label: 'Northern',      css: 'bg-gradient-to-br from-[#6a0dad] via-[#b721ff] to-[#21d4fd]' },
+  { label: 'Dusk',          css: 'bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]' },
+  { label: 'Coral Reef',    css: 'bg-gradient-to-br from-[#ff6a00] via-[#ee0979] to-[#ff6a00]' },
+  { label: 'Electric',      css: 'bg-gradient-to-br from-[#4776e6] to-[#8e54e9]' },
+  { label: 'Emerald',       css: 'bg-gradient-to-br from-[#11998e] to-[#38ef7d]' },
+  { label: 'Flamingo',      css: 'bg-gradient-to-br from-[#f953c6] to-[#b91d73]' },
+  { label: 'Midnight',      css: 'bg-gradient-to-br from-[#232526] to-[#414345]' },
+];
+
+// ─── PHOTOS ─── HD Unsplash nature & landscape images
+const photoOptions = [
+  'https://images.unsplash.com/photo-1506744626753-1fa28f621b02?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1444464666168-49b19e88145e?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1518173946687-a42874c717be?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80',
 ];
 
 const TopNavbar = () => {
@@ -22,6 +43,7 @@ const TopNavbar = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuView, setMenuView] = useState('main');
+  const [bgTab, setBgTab] = useState('colors');
 
   // Boards dropdown state
   const [isBoardsOpen, setIsBoardsOpen] = useState(false);
@@ -224,13 +246,13 @@ const TopNavbar = () => {
           {isFilterOpen && (
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="absolute top-full right-0 mt-2 w-[304px] bg-white dark:bg-[#282e33] rounded-[3px] shadow-[0_8px_16px_-4px_rgba(9,30,66,0.25)] dark:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-transparent dark:border-[#384148] text-[#172b4d] dark:text-[#b6c2cf] p-3 z-50"
+              className="absolute top-full right-0 mt-2 w-[304px] bg-[#282e33] rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-[#384148] text-[#b6c2cf] p-3 z-50"
             >
-              <div className="relative border-b border-[#091e4224] dark:border-[#384148] pb-2 mb-3">
-                <h3 className="text-center text-sm font-semibold text-[#5e6c84] dark:text-[#9fadbc]">Filter</h3>
+              <div className="relative border-b border-[#384148] pb-2 mb-3">
+                <h3 className="text-center text-sm font-semibold text-[#9fadbc]">Filter</h3>
                 <button 
                   onClick={() => setIsFilterOpen(false)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-[#6b778c] dark:text-[#9fadbc] hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] dark:hover:text-[#b6c2cf] rounded-[3px] p-1 transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9fadbc] hover:bg-[#a6c5e229] hover:text-[#b6c2cf] rounded-[3px] p-1 transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -238,22 +260,22 @@ const TopNavbar = () => {
 
               {/* Labels Section */}
               <div className="mb-4">
-                <h4 className="text-xs font-semibold text-[#5e6c84] dark:text-[#9fadbc] uppercase tracking-wide mb-2">Labels</h4>
+                <h4 className="text-xs font-semibold text-[#9fadbc] uppercase tracking-wide mb-2">Labels</h4>
                 <div className="space-y-1">
                   {boardLabels?.map(label => (
                     <label 
                       key={label.id} 
-                      className="flex items-center gap-2 p-1.5 hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors"
+                      className="flex items-center gap-2 p-1.5 hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors"
                     >
                       <input 
                         type="checkbox"
                         checked={activeFilters.labels.includes(label.id)}
                         onChange={() => toggleLabelFilter(label.id)}
-                        className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 bg-white dark:bg-[#22272b] cursor-pointer"
+                        className="w-3.5 h-3.5 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-[#22272b] cursor-pointer"
                       />
                       <div className="flex items-center gap-2 flex-1">
                         <span className={`w-3.5 h-3.5 rounded-full`} style={{ backgroundColor: label.color }}></span>
-                        <span className="text-sm font-medium text-[#172b4d] dark:text-[#b6c2cf]">{label.title}</span>
+                        <span className="text-sm font-medium text-[#b6c2cf]">{label.title}</span>
                       </div>
                     </label>
                   ))}
@@ -265,24 +287,24 @@ const TopNavbar = () => {
 
               {/* Members Section */}
               <div className="mb-4">
-                <h4 className="text-xs font-semibold text-[#5e6c84] dark:text-[#9fadbc] uppercase tracking-wide mb-2">Members</h4>
+                <h4 className="text-xs font-semibold text-[#9fadbc] uppercase tracking-wide mb-2">Members</h4>
                 <div className="space-y-1">
                   {boardUsers?.map(user => (
                     <label 
                       key={user.id} 
-                      className="flex items-center gap-2 p-1.5 hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors"
+                      className="flex items-center gap-2 p-1.5 hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors"
                     >
                       <input 
                         type="checkbox"
                         checked={activeFilters.members.includes(user.id)}
                         onChange={() => toggleMemberFilter(user.id)}
-                        className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 bg-white dark:bg-[#22272b] cursor-pointer"
+                        className="w-3.5 h-3.5 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-[#22272b] cursor-pointer"
                       />
                       <div className="flex items-center gap-2 flex-1">
                         <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
                           {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <span className="text-sm font-medium text-[#172b4d] dark:text-[#b6c2cf]">{user.username}</span>
+                        <span className="text-sm font-medium text-[#b6c2cf]">{user.username}</span>
                       </div>
                     </label>
                   ))}
@@ -291,43 +313,43 @@ const TopNavbar = () => {
 
               {/* Due Date Section */}
               <div className="mb-4">
-                <h4 className="text-xs font-semibold text-[#5e6c84] dark:text-[#9fadbc] uppercase tracking-wide mb-2">Due date</h4>
+                <h4 className="text-xs font-semibold text-[#9fadbc] uppercase tracking-wide mb-2">Due date</h4>
                 <div className="space-y-1">
-                  <label className="flex items-center gap-2 p-1.5 hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 p-1.5 hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors">
                     <input 
                       type="checkbox"
                       checked={activeFilters.dueDates.includes('noDate')}
                       onChange={() => toggleDueDateFilter('noDate')}
-                      className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 bg-white dark:bg-[#22272b] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-[#22272b] cursor-pointer"
                     />
-                    <span className="text-sm font-medium text-[#172b4d] dark:text-[#b6c2cf] flex-1">No dates</span>
+                    <span className="text-sm font-medium text-[#b6c2cf] flex-1">No dates</span>
                   </label>
-                  <label className="flex items-center gap-2 p-1.5 hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 p-1.5 hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors">
                     <input 
                       type="checkbox"
                       checked={activeFilters.dueDates.includes('overdue')}
                       onChange={() => toggleDueDateFilter('overdue')}
-                      className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 bg-white dark:bg-[#22272b] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-[#22272b] cursor-pointer"
                     />
-                    <span className="text-sm font-medium text-[#172b4d] dark:text-[#b6c2cf] flex-1">Overdue</span>
+                    <span className="text-sm font-medium text-[#b6c2cf] flex-1">Overdue</span>
                   </label>
-                  <label className="flex items-center gap-2 p-1.5 hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 p-1.5 hover:bg-[#a6c5e229] rounded cursor-pointer transition-colors">
                     <input 
                       type="checkbox"
                       checked={activeFilters.dueDates.includes('nextDay')}
                       onChange={() => toggleDueDateFilter('nextDay')}
-                      className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 bg-white dark:bg-[#22272b] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-[#22272b] cursor-pointer"
                     />
-                    <span className="text-sm font-medium text-[#172b4d] dark:text-[#b6c2cf] flex-1">Due in the next day</span>
+                    <span className="text-sm font-medium text-[#b6c2cf] flex-1">Due in the next day</span>
                   </label>
                 </div>
               </div>
 
               {/* Clear Filters Button */}
-              <div className="pt-2 border-t border-[#091e4224] dark:border-[#384148]">
+              <div className="pt-2 border-t border-[#384148]">
                 <button
                   onClick={clearFilters}
-                  className="w-full py-1.5 text-sm font-medium rounded-[3px] transition-colors hover:bg-red-500/10 text-red-600 dark:text-red-400"
+                  className="w-full py-1.5 text-sm font-medium rounded-[3px] transition-colors hover:bg-red-500/10 text-red-400"
                 >
                   Clear all filters
                 </button>
@@ -361,23 +383,23 @@ const TopNavbar = () => {
           {isMenuOpen && (
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="absolute top-full right-0 mt-2 w-[304px] bg-white dark:bg-[#282e33] rounded-[3px] shadow-[0_8px_16px_-4px_rgba(9,30,66,0.25)] dark:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-transparent dark:border-[#384148] text-[#172b4d] dark:text-[#b6c2cf] z-50 overflow-hidden flex flex-col"
+              className="absolute top-full right-0 mt-2 w-[304px] bg-[#282e33] rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-[#384148] text-[#b6c2cf] z-50 overflow-hidden flex flex-col"
             >
-              <div className="relative border-b border-[#091e4224] dark:border-[#384148] px-3 py-2">
+              <div className="relative border-b border-[#384148] px-3 py-2">
                 {menuView === 'background' && (
                   <button 
                     onClick={() => setMenuView('main')}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-[#6b778c] dark:text-[#9fadbc] hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] dark:hover:text-[#b6c2cf] rounded-[3px] p-1 transition-colors"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9fadbc] hover:bg-[#a6c5e229] hover:text-[#b6c2cf] rounded-[3px] p-1 transition-colors"
                   >
                     <ChevronLeft size={16} />
                   </button>
                 )}
-                <h3 className="text-center text-sm font-semibold text-[#5e6c84] dark:text-[#9fadbc]">
+                <h3 className="text-center text-sm font-semibold text-[#9fadbc]">
                   {menuView === 'main' ? 'Menu' : 'Change background'}
                 </h3>
                 <button 
                   onClick={() => setIsMenuOpen(false)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#6b778c] dark:text-[#9fadbc] hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] dark:hover:text-[#b6c2cf] rounded-[3px] p-1 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9fadbc] hover:bg-[#a6c5e229] hover:text-[#b6c2cf] rounded-[3px] p-1 transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -388,35 +410,77 @@ const TopNavbar = () => {
                   <div className="flex flex-col gap-1">
                     <button 
                       onClick={() => setMenuView('background')}
-                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm font-medium rounded-[3px] hover:bg-[#091e4214] dark:hover:bg-[#a6c5e229] transition-colors"
+                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm font-medium rounded-[3px] hover:bg-[#a6c5e229] transition-colors"
                     >
-                      <Image size={16} className="text-[#6b778c] dark:text-[#9fadbc]" />
+                      <Image size={16} className="text-[#9fadbc]" />
                       Change background
                     </button>
                   </div>
                 ) : (
                   <div>
-                    <h4 className="text-xs font-semibold text-[#5e6c84] dark:text-[#9fadbc] uppercase tracking-wide mb-2">Colors</h4>
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      {gradientOptions.map((grad, idx) => (
+                    {/* ─── Tabs ─── */}
+                    <div className="flex gap-1 mb-4 bg-[#1b2025] rounded-lg p-1">
+                      {[
+                        { key: 'colors', label: 'Colors', Icon: Palette },
+                        { key: 'gradients', label: 'Gradients', Icon: Droplets },
+                        { key: 'photos', label: 'Photos', Icon: Camera },
+                      ].map(({ key, label, Icon }) => (
                         <button
-                          key={idx}
-                          onClick={() => { setBoardBackground(grad); setIsMenuOpen(false); }}
-                          className={`w-16 h-12 rounded-sm cursor-pointer hover:opacity-80 transition-opacity ${grad}`}
-                        />
+                          key={key}
+                          onClick={() => setBgTab(key)}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                            bgTab === key
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'text-[#9fadbc] hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <Icon size={12} />
+                          {label}
+                        </button>
                       ))}
                     </div>
-                    <h4 className="text-xs font-semibold text-[#5e6c84] dark:text-[#9fadbc] uppercase tracking-wide mb-2">Photos</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {imageOptions.map((imgUrl, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => { setBoardBackground(imgUrl); setIsMenuOpen(false); }}
-                          className="h-16 rounded-[3px] bg-cover bg-center hover:opacity-80 transition-opacity"
-                          style={{ backgroundImage: `url(${imgUrl})` }}
-                        />
-                      ))}
-                    </div>
+
+                    {/* ─── Solid Colors Grid ─── */}
+                    {bgTab === 'colors' && (
+                      <div className="grid grid-cols-5 gap-2">
+                        {solidColorOptions.map((opt, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => { setBoardBackground(opt.css); setIsMenuOpen(false); }}
+                            title={opt.label}
+                            className={`aspect-square rounded-lg cursor-pointer hover:scale-110 hover:ring-2 hover:ring-white/60 transition-all duration-150 shadow-sm ${opt.css}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* ─── Gradients Grid ─── */}
+                    {bgTab === 'gradients' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {gradientOptions.map((opt, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => { setBoardBackground(opt.css); setIsMenuOpen(false); }}
+                            title={opt.label}
+                            className={`h-16 rounded-lg cursor-pointer hover:scale-[1.03] hover:ring-2 hover:ring-white/60 transition-all duration-150 shadow-sm ${opt.css}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* ─── Photos Grid ─── */}
+                    {bgTab === 'photos' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {photoOptions.map((imgUrl, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => { setBoardBackground(imgUrl); setIsMenuOpen(false); }}
+                            className="h-20 rounded-lg bg-cover bg-center hover:scale-[1.03] hover:ring-2 hover:ring-white/60 transition-all duration-150 shadow-sm"
+                            style={{ backgroundImage: `url(${imgUrl})` }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -106,7 +106,7 @@ const List = ({ list, index }) => {
     <Draggable draggableId={list.id} index={index}>
       {(provided) => (
         <div 
-          className={`w-72 max-h-full flex flex-col text-[#b6c2cf] rounded-xl flex-shrink-0 shadow-xl border border-black/20 ${listBg}`}
+          className={`w-72 max-h-[calc(100vh-100px)] flex flex-col text-[#b6c2cf] rounded-xl flex-shrink-0 shadow-xl border border-black/20 ${listBg}`}
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
@@ -147,7 +147,7 @@ const List = ({ list, index }) => {
           <Droppable droppableId={list.id} type="card">
             {(provided) => (
               <div 
-                className="flex-1 overflow-y-auto overflow-x-hidden p-2 custom-scrollbar"
+                className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 custom-scrollbar"
                 ref={provided.innerRef}
                 {...provided.droppableProps}
               >

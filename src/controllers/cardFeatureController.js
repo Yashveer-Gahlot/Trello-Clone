@@ -319,6 +319,50 @@ const deleteAttachment = async (req, res) => {
   }
 };
 
+// Add a link attachment
+const addLinkAttachment = async (req, res) => {
+  try {
+    const { cardId } = req.params;
+    const { url, displayName } = req.body;
+    const userId = req.user?.id;
+
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+
+    // Derive a display name from the URL if not provided
+    let fileName = displayName || url;
+    try {
+      const parsed = new URL(url);
+      if (!displayName) fileName = parsed.hostname + parsed.pathname.substring(0, 30);
+    } catch (_) { /* not a valid URL, use as-is */ }
+
+    await prisma.attachment.create({
+      data: {
+        cardId,
+        userId: userId || 'system',
+        fileName,
+        fileUrl: url,
+        fileType: 'link',
+      }
+    });
+
+    if (userId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId, actionType: 'added_attachment', actionDetails: { fileName, type: 'link' } }
+        });
+      }
+    }
+
+    const card = await getFullCard(cardId);
+    res.status(201).json(card);
+  } catch (err) {
+    if (err.code === 'P2003') return res.status(404).json({ error: 'Card not found' });
+    console.error('Error adding link attachment:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   addLabelToCard,
   removeLabelFromCard,
@@ -332,4 +376,5 @@ module.exports = {
   deleteChecklistItem,
   uploadAttachment,
   deleteAttachment,
+  addLinkAttachment,
 };

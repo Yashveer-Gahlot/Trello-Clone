@@ -14,6 +14,7 @@ router.delete('/:id', cardController.deleteCard);
 
 // Attachment routes
 router.post('/:cardId/attachments', upload.single('file'), cardFeatureController.uploadAttachment);
+router.post('/:cardId/attachments/link', cardFeatureController.addLinkAttachment);
 router.delete('/:cardId/attachments/:attachmentId', cardFeatureController.deleteAttachment);
 
 module.exports = router;

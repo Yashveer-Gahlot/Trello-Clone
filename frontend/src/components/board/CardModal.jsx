@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlignLeft, Type, Tag, Users, Calendar, CheckSquare, Plus, Trash2, Archive, ChevronLeft, Paperclip, Download, Activity } from 'lucide-react';
+import { X, AlignLeft, Type, Tag, Users, Calendar, CheckSquare, Plus, Trash2, Archive, ChevronLeft, Paperclip, Download, Activity, Link2, FileText, Monitor, ExternalLink } from 'lucide-react';
 import useBoardStore from '../../store/useBoardStore';
 
 const labelColors = [
@@ -28,6 +28,7 @@ const CardModal = () => {
   const deleteChecklistItem = useBoardStore((state) => state.deleteChecklistItem);
   const archiveCard = useBoardStore((state) => state.archiveCard);
   const addAttachment = useBoardStore((state) => state.addAttachment);
+  const addLinkAttachment = useBoardStore((state) => state.addLinkAttachment);
   const removeAttachment = useBoardStore((state) => state.deleteAttachment);
 
   const [title, setTitle] = useState('');
@@ -41,11 +42,14 @@ const CardModal = () => {
   const [newLabelTitle, setNewLabelTitle] = useState('');
   const [newLabelColor, setNewLabelColor] = useState(labelColors[0]);
 
-  // Popover toggles
   const [showLabels, setShowLabels] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [showDueDate, setShowDueDate] = useState(false);
   const [showChecklistAdd, setShowChecklistAdd] = useState(false);
+  const [showAttachmentPopover, setShowAttachmentPopover] = useState(false);
+  const [attachmentTab, setAttachmentTab] = useState('file'); // 'file' or 'link'
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkDisplayName, setLinkDisplayName] = useState('');
 
   // Input states
   const [dueDateInput, setDueDateInput] = useState('');
@@ -61,7 +65,10 @@ const CardModal = () => {
       setShowMembers(false);
       setShowDueDate(false);
       setShowChecklistAdd(false);
+      setShowAttachmentPopover(false);
       setIsCreatingLabel(false);
+      setLinkUrl('');
+      setLinkDisplayName('');
     }
   }, [activeCard]);
 
@@ -230,19 +237,37 @@ const CardModal = () => {
                 <h3 className="text-lg font-semibold">Attachments</h3>
               </div>
               <div className="space-y-3">
-                {activeCard.attachments.map((attachment) => (
-                  <div key={attachment.id} className="flex items-center justify-between bg-gray-900 p-3 rounded-lg border border-gray-700 hover:bg-gray-800 transition-colors">
-                    <span className="text-sm font-medium truncate max-w-[70%]">{attachment.fileName}</span>
-                    <div className="flex gap-2">
-                      <a href={`http://localhost:3000${attachment.fileUrl}`} target="_blank" rel="noreferrer" className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 hover:text-white transition-colors">
-                        <Download className="w-4 h-4" />
-                      </a>
-                      <button onClick={() => removeAttachment(activeCard.id, attachment.id)} className="p-1.5 bg-gray-700 hover:bg-red-500/80 rounded text-gray-300 hover:text-white transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                {activeCard.attachments.map((attachment) => {
+                  const isLink = attachment.fileType === 'link' || attachment.fileUrl?.startsWith('http');
+                  const href = isLink ? attachment.fileUrl : `http://localhost:3000${attachment.fileUrl}`;
+                  return (
+                    <div key={attachment.id} className="flex items-center gap-3 bg-gray-900 p-3 rounded-lg border border-gray-700 hover:bg-gray-800 transition-colors">
+                      {/* Type icon */}
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${
+                        isLink ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
+                      }`}>
+                        {isLink ? <Link2 className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate block">{attachment.fileName}</span>
+                        <span className="text-[11px] text-gray-500">
+                          {isLink ? 'Link' : 'File'}
+                          {attachment.createdAt && ` · ${new Date(attachment.createdAt).toLocaleDateString()}`}
+                        </span>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex gap-1.5 shrink-0">
+                        <a href={href} target="_blank" rel="noreferrer" className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 hover:text-white transition-colors" title={isLink ? 'Open link' : 'Download'}>
+                          {isLink ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                        </a>
+                        <button onClick={() => removeAttachment(activeCard.id, attachment.id)} className="p-1.5 bg-gray-700 hover:bg-red-500/80 rounded text-gray-300 hover:text-white transition-colors" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -539,19 +564,105 @@ const CardModal = () => {
           </div>
 
           {/* Attachment Button */}
-          <div>
+          <div className="relative">
             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-4">Add to card</h4>
-            <label className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-md cursor-pointer transition-colors text-sm font-medium">
+            <button
+              onClick={() => { setShowAttachmentPopover(!showAttachmentPopover); setShowLabels(false); setShowMembers(false); setShowDueDate(false); setShowChecklistAdd(false); }}
+              className="flex items-center gap-2 w-full bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-md cursor-pointer transition-colors text-sm font-medium"
+            >
               <Paperclip className="w-4 h-4" />
               Attachment
-              <input 
-                type="file" 
-                className="hidden" 
-                onChange={(e) => { 
-                  if (e.target.files[0]) addAttachment(activeCard.id, e.target.files[0]); 
-                }} 
-              />
-            </label>
+            </button>
+
+            {showAttachmentPopover && (
+              <div className="absolute bottom-full mb-2 right-0 w-72 bg-[#282e33] rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-[#384148] text-[#b6c2cf] z-50 overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-3 py-2 border-b border-[#384148]">
+                  <span className="text-sm font-semibold text-[#9fadbc]">Attach</span>
+                  <button onClick={() => setShowAttachmentPopover(false)} className="p-1 hover:bg-[#a6c5e229] rounded transition-colors">
+                    <X size={14} className="text-[#9fadbc]" />
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-1 mx-3 mt-2 bg-[#1b2025] rounded-lg p-1">
+                  <button
+                    onClick={() => setAttachmentTab('file')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      attachmentTab === 'file' ? 'bg-blue-600 text-white shadow-md' : 'text-[#9fadbc] hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Monitor size={12} />
+                    Computer
+                  </button>
+                  <button
+                    onClick={() => setAttachmentTab('link')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      attachmentTab === 'link' ? 'bg-blue-600 text-white shadow-md' : 'text-[#9fadbc] hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Link2 size={12} />
+                    Link
+                  </button>
+                </div>
+
+                {/* Tab Content */}
+                <div className="p-3">
+                  {attachmentTab === 'file' ? (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2">Choose a file from your computer</p>
+                      <label className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-md cursor-pointer transition-colors text-sm font-semibold">
+                        <Monitor size={14} />
+                        Choose file
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files[0]) {
+                              addAttachment(activeCard.id, e.target.files[0]);
+                              setShowAttachmentPopover(false);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-xs font-semibold text-[#9fadbc] block mb-1">URL</label>
+                      <input
+                        type="url"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        placeholder="Paste any link here..."
+                        className="w-full bg-[#22272b] border border-[#384148] rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
+                      />
+                      <label className="text-xs font-semibold text-[#9fadbc] block mb-1">Display text (optional)</label>
+                      <input
+                        type="text"
+                        value={linkDisplayName}
+                        onChange={(e) => setLinkDisplayName(e.target.value)}
+                        placeholder="Text to display"
+                        className="w-full bg-[#22272b] border border-[#384148] rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3"
+                      />
+                      <button
+                        onClick={() => {
+                          if (linkUrl.trim()) {
+                            addLinkAttachment(activeCard.id, linkUrl.trim(), linkDisplayName.trim() || undefined);
+                            setLinkUrl('');
+                            setLinkDisplayName('');
+                            setShowAttachmentPopover(false);
+                          }
+                        }}
+                        disabled={!linkUrl.trim()}
+                        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-2 rounded-md transition-colors text-sm font-semibold"
+                      >
+                        Attach
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Checklist Button */}

@@ -42,7 +42,7 @@ const BoardCanvas = () => {
   // Define an empty state or the main board view
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <main className="flex-1 w-full relative z-0">
+      <main className="flex-1 w-full relative z-0 overflow-hidden">
         {filteredLists.length === 0 ? (
           // Perfectly centered empty state
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
@@ -68,12 +68,12 @@ const BoardCanvas = () => {
           <Droppable droppableId="board" type="list" direction="horizontal">
             {(provided) => (
               <div 
-                className="flex h-full items-start gap-4 overflow-x-auto overflow-y-hidden p-4"
+                className="flex h-full items-start gap-4 overflow-x-auto overflow-y-hidden p-4 pb-2"
                 ref={provided.innerRef}
                 {...provided.droppableProps}
               >
                 {filteredLists.map((list, index) => (
-                  <div key={list.id} className="shrink-0 h-full">
+                  <div key={list.id} className="shrink-0" style={{ maxHeight: 'calc(100% - 8px)' }}>
                     <List list={list} index={index} />
                   </div>
                 ))}

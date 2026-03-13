@@ -17,7 +17,7 @@ const useBoardStore = create((set, get) => ({
   activeCard: null,
   searchQuery: '',
   activeFilters: { labels: [], members: [], dueDates: [] },
-  boardBackground: 'bg-gradient-to-br from-blue-900 via-blue-700 to-blue-400',
+  boardBackground: 'bg-gradient-to-br from-[#0052cc] via-[#0079bf] to-[#00c2e0]',
   isLoading: false,
   error: null,
 
@@ -437,6 +437,15 @@ const useBoardStore = create((set, get) => ({
       get().syncCardInState(response.data);
     } catch (error) {
       console.error('Error deleting attachment:', error);
+    }
+  },
+
+  addLinkAttachment: async (cardId, url, displayName) => {
+    try {
+      const response = await axios.post(`${API}/cards/${cardId}/attachments/link`, { url, displayName });
+      get().syncCardInState(response.data);
+    } catch (error) {
+      console.error('Error adding link attachment:', error);
     }
   },
 
