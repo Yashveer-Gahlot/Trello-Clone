@@ -6,7 +6,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Apply middlewares
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allows all origins. For strict production, replace with your complete Frontend URL.
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 204
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -40,6 +46,11 @@ const cardFeatureRoutes = require('./routes/cardFeatureRoutes');
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Trello Clone API' });
 });
+
+const initController = require('./controllers/initController');
+
+// API Routes
+app.get('/api/init', initController.initDatabase);
 
 const authMiddleware = require('./middleware/auth');
 
