@@ -13,6 +13,18 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
 
+const fs = require('fs');
+app.use((req, res, next) => {
+  const originalSend = res.json;
+  res.json = function(body) {
+    if (res.statusCode >= 400 && req.path === '/api/cards') {
+      fs.appendFileSync('debug.log', `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - BODY: ${JSON.stringify(req.body)} - RESPONSE: ${JSON.stringify(body)}\n`);
+    }
+    return originalSend.apply(this, arguments);
+  };
+  next();
+});
+
 const cardRoutes = require('./routes/cardRoutes');
 const boardRoutes = require('./routes/boardRoutes');
 const listRoutes = require('./routes/listRoutes');

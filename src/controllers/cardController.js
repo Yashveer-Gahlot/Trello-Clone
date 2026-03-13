@@ -24,17 +24,20 @@ const createCard = async (req, res) => {
       data: {
         listId,
         title,
-        description,
+        description: description || '',
         position: finalPosition,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        reminderDate: reminderDate ? new Date(reminderDate) : null,
       },
-      include: fullCardInclude,
+      include: {
+        cardLabels: { include: { label: true } },
+        cardMembers: { include: { user: true } },
+        checklists: { include: { items: true } },
+        attachments: true,
+      }
     });
 
     res.status(201).json(card);
   } catch (err) {
-    console.error('Error creating card:', err);
+    console.error('BACKEND_CRASH_LOG:', err);
     if (err.code === 'P2003') {
       return res.status(400).json({ error: 'Invalid listId provided' });
     }

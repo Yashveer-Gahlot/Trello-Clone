@@ -285,19 +285,71 @@ const useBoardStore = create((set, get) => ({
   },
 
   toggleCardLabel: async (cardId, labelId) => {
+    const previousCards = get().cards;
+    const previousActiveCard = get().activeCard;
+    
+    // Optimistic Update
+    set((state) => {
+      const updatedCards = state.cards.map(card => {
+        if (card.id === cardId) {
+          const hasLabel = card.cardLabels?.some(cl => cl.labelId === labelId);
+          let newLabels;
+          if (hasLabel) {
+            newLabels = card.cardLabels.filter(cl => cl.labelId !== labelId);
+          } else {
+            const labelObj = state.boardLabels.find(l => l.id === labelId);
+            newLabels = [...(card.cardLabels || []), { cardId, labelId, label: labelObj }];
+          }
+          return { ...card, cardLabels: newLabels };
+        }
+        return card;
+      });
+      
+      return { 
+        cards: updatedCards, 
+        activeCard: state.activeCard?.id === cardId ? updatedCards.find(c => c.id === cardId) : state.activeCard 
+      };
+    });
+
     try {
       const response = await axios.post(`${API}/cards/${cardId}/labels/${labelId}/toggle`);
       get().syncCardInState(response.data);
     } catch (error) {
+      set({ cards: previousCards, activeCard: previousActiveCard });
       console.error('Error toggling label:', error);
     }
   },
 
   // ─── MEMBER ACTIONS ─────────────────────────────────────────
   toggleCardMember: async (cardId, userId) => {
+    const previousCards = get().cards;
+    const previousActiveCard = get().activeCard;
+
+    // Optimistic Update
+    set((state) => {
+      const updatedCards = state.cards.map(c => {
+        if (c.id === cardId) {
+          const hasMember = c.cardMembers?.some(cm => cm.userId === userId);
+          let newMembers;
+          if (hasMember) {
+            newMembers = c.cardMembers.filter(cm => cm.userId !== userId);
+          } else {
+            const userObj = state.boardUsers.find(u => u.id === userId);
+            newMembers = [...(c.cardMembers || []), { cardId, userId, user: userObj }];
+          }
+          return { ...c, cardMembers: newMembers };
+        }
+        return c;
+      });
+      
+      return { 
+        cards: updatedCards,
+        activeCard: state.activeCard?.id === cardId ? updatedCards.find(c => c.id === cardId) : state.activeCard
+      };
+    });
+
     try {
-      const { cards } = get();
-      const card = cards.find(c => c.id === cardId);
+      const card = previousCards.find(c => c.id === cardId);
       const hasMember = card?.cardMembers?.some(cm => cm.userId === userId);
       let response;
       if (hasMember) {
@@ -307,16 +359,30 @@ const useBoardStore = create((set, get) => ({
       }
       get().syncCardInState(response.data);
     } catch (error) {
+      set({ cards: previousCards, activeCard: previousActiveCard });
       console.error('Error toggling member:', error);
     }
   },
 
   // ─── DUE DATE ───────────────────────────────────────────────
   updateCardDueDate: async (cardId, dueDate) => {
+    const previousCards = get().cards;
+    const previousActiveCard = get().activeCard;
+
+    // Optimistic Update
+    set((state) => {
+      const updatedCards = state.cards.map(c => c.id === cardId ? { ...c, dueDate } : c);
+      return {
+        cards: updatedCards,
+        activeCard: state.activeCard?.id === cardId ? updatedCards.find(c => c.id === cardId) : state.activeCard
+      };
+    });
+
     try {
       const response = await axios.put(`${API}/cards/${cardId}`, { dueDate });
       get().syncCardInState(response.data);
     } catch (error) {
+      set({ cards: previousCards, activeCard: previousActiveCard });
       console.error('Error updating due date:', error);
     }
   },
