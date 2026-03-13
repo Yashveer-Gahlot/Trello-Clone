@@ -125,10 +125,4 @@ A full-stack project management application inspired by Trello, allowing users t
 - `POST /api/checklists/:checklistId/items` - Add an item to a checklist
 - `PATCH /api/checklists/:checklistId/items/:itemId` - Toggle/update a checklist item
 - `DELETE /api/checklists/:checklistId/items/:itemId` - Delete a checklist item
-## Vercel Deployment Instructions
 
-1. Import this project to Vercel via the Vercel Dashboard (ensure Root Directory is the repository root).
-2. Set the 'Framework Preset' to **Vite**.
-3. Expand 'Environment Variables' and add:
-   - `DATABASE_URL`: Your production PostgreSQL connection pool URL.
-4. Click **Deploy**. Vercel will automatically build the frontend into `frontend/dist` and use `backend/api/index.js` as the backend entry for Serverless Functions.
