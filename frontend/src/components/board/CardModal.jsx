@@ -575,7 +575,7 @@ const CardModal = () => {
             </button>
 
             {showAttachmentPopover && (
-              <div className="absolute bottom-full mb-2 right-0 w-72 bg-[#282e33] rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-[#384148] text-[#b6c2cf] z-50 overflow-hidden">
+              <div className="absolute top-full mt-2 right-0 w-72 bg-[#282e33] rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] border border-[#384148] text-[#b6c2cf] z-50 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-3 py-2 border-b border-[#384148]">
                   <span className="text-sm font-semibold text-[#9fadbc]">Attach</span>

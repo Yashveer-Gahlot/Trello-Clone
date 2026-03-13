@@ -30,7 +30,6 @@ const gradientOptions = [
 
 // ─── PHOTOS ─── HD Unsplash nature & landscape images
 const photoOptions = [
-  'https://images.unsplash.com/photo-1506744626753-1fa28f621b02?auto=format&fit=crop&w=1920&q=80',
   'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1920&q=80',
   'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80',
   'https://images.unsplash.com/photo-1444464666168-49b19e88145e?auto=format&fit=crop&w=1920&q=80',

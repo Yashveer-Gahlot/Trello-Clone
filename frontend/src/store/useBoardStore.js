@@ -432,10 +432,29 @@ const useBoardStore = create((set, get) => ({
   },
 
   deleteAttachment: async (cardId, attachmentId) => {
+    const previousCards = get().cards;
+    const previousActiveCard = get().activeCard;
+
+    // Optimistic Update – instantly remove from UI
+    set((state) => {
+      const updatedCards = state.cards.map(c => {
+        if (c.id === cardId) {
+          return { ...c, attachments: (c.attachments || []).filter(a => a.id !== attachmentId) };
+        }
+        return c;
+      });
+      return {
+        cards: updatedCards,
+        activeCard: state.activeCard?.id === cardId ? updatedCards.find(c => c.id === cardId) : state.activeCard,
+      };
+    });
+
     try {
       const response = await axios.delete(`${API}/cards/${cardId}/attachments/${attachmentId}`);
       get().syncCardInState(response.data);
     } catch (error) {
+      // Rollback on failure
+      set({ cards: previousCards, activeCard: previousActiveCard });
       console.error('Error deleting attachment:', error);
     }
   },

@@ -278,8 +278,10 @@ const uploadAttachment = async (req, res) => {
     await prisma.attachment.create({
       data: {
         cardId,
+        userId: userId || 'system',
         fileName: req.file.originalname,
         fileUrl: `/uploads/${req.file.filename}`,
+        fileType: 'file',
       }
     });
 
