@@ -44,7 +44,12 @@ app.use('/api/lists', listRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api', cardFeatureRoutes);
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Start the server (only if not running in a serverless environment)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+// Export the Express API
+module.exports = app;

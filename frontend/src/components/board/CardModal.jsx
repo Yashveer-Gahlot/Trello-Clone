@@ -239,7 +239,8 @@ const CardModal = () => {
               <div className="space-y-3">
                 {activeCard.attachments.map((attachment) => {
                   const isLink = attachment.fileType === 'link' || attachment.fileUrl?.startsWith('http');
-                  const href = isLink ? attachment.fileUrl : `http://localhost:3000${attachment.fileUrl}`;
+                  const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:3000';
+                  const href = isLink ? attachment.fileUrl : `${baseUrl}${attachment.fileUrl}`;
                   return (
                     <div key={attachment.id} className="flex items-center gap-3 bg-gray-900 p-3 rounded-lg border border-gray-700 hover:bg-gray-800 transition-colors">
                       {/* Type icon */}

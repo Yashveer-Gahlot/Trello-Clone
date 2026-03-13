@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-const API = 'http://localhost:3000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const useBoardStore = create((set, get) => ({
   // ─── MULTI-BOARD STATE ──────────────────────────────────────
