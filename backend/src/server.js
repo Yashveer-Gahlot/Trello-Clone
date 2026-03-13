@@ -6,15 +6,20 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Apply middlewares
-app.use(cors({
-  origin: '*', // Allows all origins. For strict production, replace with your complete Frontend URL.
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 204
-}));
+app.use(cors()); // Allow all by default
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Force CORS headers on every response to guarantee Vercel Edge compliance
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Serve uploaded files statically (use /tmp/uploads on Vercel)
 const uploadDir = process.env.VERCEL ? '/tmp/uploads' : 'uploads';
