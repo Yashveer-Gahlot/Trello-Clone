@@ -6,17 +6,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── CORS CONFIGURATION ─────────────────────────────────────────
-const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
-
-app.use(cors({
-  origin: allowedOrigin,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
-  credentials: true
-}));
-
-// handle preflight requests
-app.options("*", cors());
+// Force CORS headers on every response to guarantee Vercel Edge compliance without 'cors' library
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // ─── BODY PARSERS ───────────────────────────────────────────────
 app.use(express.json());
