@@ -2,8 +2,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), 'uploads');
+// Ensure uploads directory exists. Vercel is read-only except for /tmp
+const baseDir = process.env.VERCEL ? '/tmp' : process.cwd();
+const uploadDir = path.join(baseDir, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

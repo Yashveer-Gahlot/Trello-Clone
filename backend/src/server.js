@@ -10,15 +10,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files statically
-app.use('/uploads', express.static('uploads'));
+// Serve uploaded files statically (use /tmp/uploads on Vercel)
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : 'uploads';
+app.use('/uploads', express.static(uploadDir));
 
 const fs = require('fs');
 app.use((req, res, next) => {
   const originalSend = res.json;
   res.json = function(body) {
     if (res.statusCode >= 400 && req.path === '/api/cards') {
-      fs.appendFileSync('debug.log', `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - BODY: ${JSON.stringify(req.body)} - RESPONSE: ${JSON.stringify(body)}\n`);
+      const logMessage = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - BODY: ${JSON.stringify(req.body)} - RESPONSE: ${JSON.stringify(body)}\n`;
+      if (process.env.VERCEL) {
+        console.error(logMessage);
+      } else {
+        fs.appendFileSync('debug.log', logMessage);
+      }
     }
     return originalSend.apply(this, arguments);
   };
