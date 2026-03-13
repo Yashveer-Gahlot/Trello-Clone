@@ -5,6 +5,7 @@ const { fullCardInclude } = require('./boardController');
 const createCard = async (req, res) => {
   try {
     const { listId, title, description, position, dueDate, reminderDate } = req.body;
+    const userId = req.user?.id;
 
     if (!listId || !title) {
       return res.status(400).json({ error: 'listId and title are required' });
@@ -32,8 +33,27 @@ const createCard = async (req, res) => {
         cardMembers: { include: { user: true } },
         checklists: { include: { items: true } },
         attachments: true,
+        activities: { orderBy: { createdAt: 'desc' }, include: { user: true } },
       }
     });
+
+    if (userId) {
+      // Find the boardId via the list to attach to the activity
+      const list = await prisma.list.findUnique({ where: { id: listId } });
+      if (list) {
+        await prisma.activity.create({
+          data: {
+            boardId: list.boardId,
+            cardId: card.id,
+            userId,
+            actionType: 'created',
+          }
+        });
+        // Refetch to include the new activity
+        const updatedCard = await prisma.card.findUnique({ where: { id: card.id }, include: fullCardInclude });
+        return res.status(201).json(updatedCard);
+      }
+    }
 
     res.status(201).json(card);
   } catch (err) {
@@ -112,6 +132,7 @@ const updateCardDetails = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, dueDate } = req.body;
+    const userId = req.user?.id;
 
     const updateData = {};
     if (title !== undefined) updateData.title = title;
@@ -127,6 +148,26 @@ const updateCardDetails = async (req, res) => {
       data: updateData,
       include: fullCardInclude,
     });
+
+    if (userId) {
+      if (title !== undefined) {
+        await prisma.activity.create({
+          data: { boardId: card.list.boardId, cardId: id, userId, actionType: 'updated_title', actionDetails: { title } }
+        });
+      }
+      if (description !== undefined) {
+        await prisma.activity.create({
+          data: { boardId: card.list.boardId, cardId: id, userId, actionType: 'updated_description' }
+        });
+      }
+      if (dueDate !== undefined) {
+        await prisma.activity.create({
+          data: { boardId: card.list.boardId, cardId: id, userId, actionType: 'updated_due_date', actionDetails: { dueDate } }
+        });
+      }
+      const updatedCard = await prisma.card.findUnique({ where: { id }, include: fullCardInclude });
+      return res.status(200).json(updatedCard);
+    }
 
     res.status(200).json(card);
   } catch (err) {

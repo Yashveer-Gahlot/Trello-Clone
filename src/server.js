@@ -35,7 +35,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Trello Clone API' });
 });
 
+const authMiddleware = require('./middleware/auth');
+
 // API Routes
+app.use(authMiddleware);
 app.use('/api/boards', boardRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/cards', cardRoutes);

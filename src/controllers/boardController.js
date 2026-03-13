@@ -15,6 +15,10 @@ const fullCardInclude = {
     },
   },
   attachments: true,
+  activities: {
+    orderBy: { createdAt: 'desc' },
+    include: { user: true },
+  },
 };
 
 // 1. Get all boards (lightweight listing)

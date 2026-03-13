@@ -11,7 +11,18 @@ const getFullCard = (cardId) =>
 const addLabelToCard = async (req, res) => {
   try {
     const { cardId, labelId } = req.params;
+    const userId = req.user?.id;
     await prisma.cardLabel.create({ data: { cardId, labelId } });
+
+    if (userId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId, actionType: 'added_label', actionDetails: { labelId } }
+        });
+      }
+    }
+
     const card = await getFullCard(cardId);
     res.status(201).json(card);
   } catch (err) {
@@ -31,10 +42,24 @@ const toggleCardLabel = async (req, res) => {
       where: { cardId_labelId: { cardId, labelId } },
     });
 
+    const userId = req.user?.id;
+    let actionType = '';
+
     if (existingLink) {
       await prisma.cardLabel.delete({ where: { cardId_labelId: { cardId, labelId } } });
+      actionType = 'removed_label';
     } else {
       await prisma.cardLabel.create({ data: { cardId, labelId } });
+      actionType = 'added_label';
+    }
+
+    if (userId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId, actionType, actionDetails: { labelId } }
+        });
+      }
     }
 
     const card = await getFullCard(cardId);
@@ -50,7 +75,18 @@ const toggleCardLabel = async (req, res) => {
 const removeLabelFromCard = async (req, res) => {
   try {
     const { cardId, labelId } = req.params;
+    const userId = req.user?.id;
     await prisma.cardLabel.delete({ where: { cardId_labelId: { cardId, labelId } } });
+
+    if (userId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId, actionType: 'removed_label', actionDetails: { labelId } }
+        });
+      }
+    }
+
     const card = await getFullCard(cardId);
     res.status(200).json(card);
   } catch (err) {
@@ -66,7 +102,18 @@ const removeLabelFromCard = async (req, res) => {
 const addMemberToCard = async (req, res) => {
   try {
     const { cardId, userId } = req.params;
+    const reqUserId = req.user?.id;
     await prisma.cardMember.create({ data: { cardId, userId } });
+
+    if (reqUserId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId: reqUserId, actionType: 'added_member', actionDetails: { addedUserId: userId } }
+        });
+      }
+    }
+
     const card = await getFullCard(cardId);
     res.status(201).json(card);
   } catch (err) {
@@ -81,7 +128,18 @@ const addMemberToCard = async (req, res) => {
 const removeMemberFromCard = async (req, res) => {
   try {
     const { cardId, userId } = req.params;
+    const reqUserId = req.user?.id;
     await prisma.cardMember.delete({ where: { cardId_userId: { cardId, userId } } });
+
+    if (reqUserId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId: reqUserId, actionType: 'removed_member', actionDetails: { removedUserId: userId } }
+        });
+      }
+    }
+
     const card = await getFullCard(cardId);
     res.status(200).json(card);
   } catch (err) {
@@ -211,6 +269,7 @@ const deleteChecklistItem = async (req, res) => {
 const uploadAttachment = async (req, res) => {
   try {
     const { cardId } = req.params;
+    const userId = req.user?.id;
     
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -223,6 +282,15 @@ const uploadAttachment = async (req, res) => {
         fileUrl: `/uploads/${req.file.filename}`,
       }
     });
+
+    if (userId) {
+      const cardRef = await prisma.card.findUnique({ where: { id: cardId }, include: { list: true } });
+      if (cardRef) {
+        await prisma.activity.create({
+          data: { boardId: cardRef.list.boardId, cardId, userId, actionType: 'added_attachment', actionDetails: { fileName: req.file.originalname } }
+        });
+      }
+    }
 
     const card = await getFullCard(cardId);
     res.status(201).json(card);

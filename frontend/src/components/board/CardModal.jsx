@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlignLeft, Type, Tag, Users, Calendar, CheckSquare, Plus, Trash2, Archive, ChevronLeft, Paperclip, Download } from 'lucide-react';
+import { X, AlignLeft, Type, Tag, Users, Calendar, CheckSquare, Plus, Trash2, Archive, ChevronLeft, Paperclip, Download, Activity } from 'lucide-react';
 import useBoardStore from '../../store/useBoardStore';
 
 const labelColors = [
@@ -110,6 +110,35 @@ const CardModal = () => {
   // Compute labels and members on card
   const cardLabelIds = new Set(activeCard.cardLabels?.map(cl => cl.labelId) || []);
   const cardMemberIds = new Set(activeCard.cardMembers?.map(cm => cm.userId) || []);
+
+  const formatActivityTarget = (activity) => {
+    switch (activity.actionType) {
+      case 'created': return 'created this card';
+      case 'updated_title': return `renamed this card to "${activity.actionDetails?.title}"`;
+      case 'updated_description': return 'updated the description';
+      case 'updated_due_date': return `changed the due date to ${new Date(activity.actionDetails?.dueDate).toLocaleDateString()}`;
+      case 'added_label': return 'added a label';
+      case 'removed_label': return 'removed a label';
+      case 'added_member': return 'added a member to this card';
+      case 'removed_member': return 'removed a member from this card';
+      case 'added_attachment': return `attached ${activity.actionDetails?.fileName || 'a file'}`;
+      default: return activity.actionType;
+    }
+  };
+
+  // Helper for relative time
+  const timeAgo = (dateString) => {
+    const timestamp = new Date(dateString).getTime();
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return `${seconds} seconds ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minutes ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hours ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} days ago`;
+    return new Date(dateString).toLocaleDateString();
+  };
 
   return (
     <div
@@ -309,6 +338,37 @@ const CardModal = () => {
               </div>
             );
           })}
+
+          {/* ═══ ACTIVITY LOG ═══ */}
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-4 text-gray-400">
+              <Activity size={16} />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Activity</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {activeCard.activities?.map((activity) => (
+                <div key={activity.id} className="flex gap-3">
+                  <div 
+                    className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs text-white font-bold shrink-0 mt-0.5"
+                    title={activity.user?.username || 'User'}
+                  >
+                    {activity.user?.username ? activity.user.username.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-300">
+                      <span className="font-semibold text-white mr-1">{activity.user?.username || 'Someone'}</span>
+                      {formatActivityTarget(activity)}
+                    </p>
+                    <span className="text-xs text-gray-500">{timeAgo(activity.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+              {(!activeCard.activities || activeCard.activities.length === 0) && (
+                <p className="text-sm text-gray-500 italic">No activity recorded yet.</p>
+              )}
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#384148]">
